@@ -1,8 +1,7 @@
 package controllers
 
-import play.api._
 import play.api.mvc._
-import models.Task
+import models.{Project, Task}
 
 import play.api.data._
 import play.api.data.Forms._
@@ -10,32 +9,42 @@ import play.api.data.Forms._
 object Application extends Controller {
 
   def index = Action {
-    Redirect(routes.Application.tasks)
-//    Ok(views.html.index("Your new application is ready!!!"))
+    Ok(views.html.index(Project.all(), projectForm, Task.all(), taskForm))
   }
 
-  def home = Action {
-    Ok("Hello world")
+  def newProject = Action { implicit request =>
+    projectForm.bindFromRequest.fold(
+      errors => BadRequest(views.html.index(Project.all(), errors, Task.all(), taskForm)),
+      name => {
+        Project.create(name)
+        Redirect(routes.Application.index)
+      }
+    )
   }
 
-  def tasks = Action {
-    Ok(views.html.index(Task.all(), taskForm))
+  def deleteProject(id: Long) = Action {
+    Project.delete(id)
+    Redirect(routes.Application.index)
   }
 
   def newTask = Action { implicit request =>
     taskForm.bindFromRequest.fold(
-      errors => BadRequest(views.html.index(Task.all(), errors)),
+      errors => BadRequest(views.html.index(Project.all(), projectForm, Task.all(), errors)),
       name => {
         Task.create(name)
-        Redirect(routes.Application.tasks)
+        Redirect(routes.Application.index)
       }
     )
   }
 
   def deleteTask(id: Long) = Action {
     Task.delete(id)
-    Redirect(routes.Application.tasks)
+    Redirect(routes.Application.index)
   }
+
+  val projectForm = Form(
+    "name" -> nonEmptyText
+  )
 
   val taskForm = Form(
     "name" -> nonEmptyText
